@@ -30,6 +30,7 @@ behaviors.add('drop-image', require('./behaviors/drop-image'));
 behaviors.add('label', require('./behaviors/label'));
 behaviors.add('segmented-button', require('./behaviors/segmented-button'));
 behaviors.add('page-ref', require('./behaviors/page-ref'));
+behaviors.add('rich-text', require('./behaviors/rich-text'));
 
 // add default decorators
 decorators.add(require('./decorators/placeholder'));

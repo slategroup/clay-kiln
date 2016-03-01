@@ -95,6 +95,8 @@ function run(context) {
     binders: {},
     formatters: {},
     name: contextName
+  }).catch(function (e) {
+    console.error(e.stack);
   });
 }
 

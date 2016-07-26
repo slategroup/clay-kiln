@@ -107,13 +107,12 @@ $layout-parent-bg-color: $purple-25;
 // menus
 .component-selector-top,
 .component-selector-bottom {
-  background: rgba(255, 255, 255, .9); // todo: maybe blur the backgrounds in the future?
+  background: rgba(255, 255, 255, .94);
   border-color: transparent;
-  border-width: 1px;
+  border-right-width: 1px;
   border-style: solid;
-  border-radius: 10px;
   box-shadow: 1px 1px 20px -9px $black; // even subtler shadow for the menus
-  right: $offset-width-half;
+  right: -1px; // match border
   position: absolute;
 }
 

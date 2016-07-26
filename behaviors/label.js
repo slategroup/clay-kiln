@@ -22,6 +22,10 @@ module.exports = function (result) {
   var label = dom.create(`<span class="label-inner">${result.bindings.label}</span>`),
     el = findOuterLabelEl(result.el);
 
+  if (!el) {
+    console.warn('The `label` behavior requires an element to be created first. Check your schema and make sure you\'ve added behavior that generates an element before adding `label`');
+  }
+
   dom.prependChild(el, label);
 
   return result;

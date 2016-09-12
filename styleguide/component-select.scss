@@ -30,6 +30,19 @@ $layout-parent-bg-color: $purple-25;
   position: relative;
 }
 
+// blur things behind the component
+.component-selector-wrapper.selected:before {
+  background: rgba(255, 255, 255, .8);
+  content: '';
+  height: 100vh;
+  left: 0;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  width: 100vw;
+  z-index: -1;
+}
+
 // selector outlines
 .component-selector {
   border-style: solid;

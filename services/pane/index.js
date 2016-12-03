@@ -13,6 +13,10 @@ function setDisabled(isDisabled) {
   return isDisabled ? 'disabled' : '';
 }
 
+function setFullWidth(isFullWidth) {
+  return isFullWidth ? 'pane-content-full-width' : '';
+}
+
 /**
  * align panes left or right
  * @param {Element} el
@@ -42,7 +46,7 @@ function createPane(tabs, dynamicTab, align) {
   // loop through the tabs, adding the tab and contents
   _.each(tabs, function (tab, index) {
     var index1 = index + 1, // 1-indexed, for easier debugging
-      contentWrapper = dom.create(`<div id="pane-content-${index1}" class="pane-content ${setDisabled(tab.disabled)}"></div>`);
+      contentWrapper = dom.create(`<div id="pane-content-${index1}" class="pane-content ${setDisabled(tab.disabled)} ${setFullWidth(tab.fullWidth)}"></div>`);
 
     tabsInnerEl.appendChild(dom.create(`<span id="pane-tab-${index1}" data-content-id="pane-content-${index1}" class="pane-tab ${setDisabled(tab.disabled)}">${tab.header}</span>`));
     contentWrapper.appendChild(tab.content);

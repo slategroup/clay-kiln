@@ -220,6 +220,10 @@ $toolbar-height: 48px;
   }
 }
 
+.kiln-toolbar-pane .pane-content-full-width {
+  padding: 0;
+}
+
 @mixin pane-border-before {
   position: relative;
   width: 100%;

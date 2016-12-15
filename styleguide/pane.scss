@@ -63,6 +63,12 @@ $toolbar-height: 48px;
   right: 0;
 }
 
+.kiln-toolbar-pane.width-wide {
+  @media screen and (min-width: 800px) {
+    max-width: 500px;
+  }
+}
+
 // regular tabs
 .kiln-toolbar-pane .pane-tabs {
   align-items: flex-start;

@@ -229,6 +229,40 @@
       </form>
     </template>
 
+    {# clay page list #}
+    <template class="page-list-template">
+      <div class="page-list">
+        <div class="page-list-input">
+          <input class="page-list-search" placeholder="Search Pages" />
+          <div class="sites-readout">
+            <button class="sites-readout-trigger" type="button"></button>
+            <div class="sites-readout-overflow">
+              <ul class="sites-readout-list"></ul>
+            </div>
+          </div>
+        </div>
+        <div class="page-list-display">
+          <ul class="page-list-readout">
+          </ul>
+          <div class="page-list-loading">
+          </div>
+        </div>
+      </div>
+    </template>
+
+    {# clay menu header #}
+    <template class="clay-menu-header-template">
+      <div class="clay-menu-header">
+        <div class="clay-menu-header-left">
+          {% include 'public/media/components/clay-kiln/clay-logo-horizontal.svg' %}
+        </div>
+        <div class="clay-menu-header-right">
+          <button type="button" class="clay-menu-header-btn settings">Settings</button>
+          <button type="button" class="clay-menu-header-btn signout">Sign Out</button>
+        </div>
+      </div>
+    </template>
+
     {# clay menu settings #}
     <template class="settings-tab-template">
       <ul class="settings-tab-items">

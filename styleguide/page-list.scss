@@ -1,0 +1,177 @@
+@import 'inputs';
+@import 'colors';
+
+$toggle_speed: 350ms;
+
+.page-list {
+  flex-grow: 1;
+  min-height: 500px;
+
+  &-input {
+    border-bottom: 1px solid $black-100;
+    border-top: 1px solid $black-100;
+    display: flex;
+    overflow: hidden;
+    max-width: 500px;
+  }
+
+  .page-list-search {
+    @include input;
+    border: none;
+    margin-top: 0;
+    transition: $toggle_speed all ease;
+
+    &.closed {
+      padding: 0;
+      width: 0px;
+    }
+  }
+
+  .page-list-readout {
+    margin: 0;
+    padding: 0;
+
+    &-item {
+      align-items: center;
+      display: flex;
+      flex-grow: 1;
+      font-size: 15px;
+      justify-content: space-between;
+      padding: 15px 10px;
+
+      &-link {
+        color: $black-100;
+        display: flex;
+        text-decoration: none;
+      }
+
+      &-title {
+        flex: 0 1 50%;
+      }
+
+      &-status {
+        flex: 0 0 100px;
+        text-align: right;
+
+        &.published {
+          color: $published;
+        }
+
+        &.scheduled {
+          color: $scheduled;
+        }
+
+        &.draft {
+          color: $draft;
+        }
+
+        &-time {
+          color: $black-100;
+          display: block;
+        }
+      }
+
+      &-author {
+        display: none;
+
+        @media screen and (min-width: 800px) {
+          display: block;
+        }
+      }
+
+      .author-button {
+        appearance: none;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .sites-readout {
+    border-left: 1px solid $black-100;
+    display: flex;
+    flex-grow: 0;
+    transition: $toggle_speed all ease;
+    width: 48px;
+
+
+    &.open {
+      flex-grow: 1;
+      width: 100%;
+    }
+
+    &-trigger {
+      appearance: none;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      width: 48px;
+
+      &:focus {
+        outline: none;
+      }
+
+      > * {
+        border: 1px solid $black;
+        max-width: 100%;
+      }
+
+      &-text {
+        background-color: $black-50;
+        border-radius: 4px;
+        color: $white;
+        font-size: 15px;
+        font-weight: bold;
+        padding: 5px 9px;
+      }
+    }
+
+    &-overflow {
+      overflow-x: scroll;
+      overflow-y: hidden;
+    }
+
+    &-list {
+      border-left: 1px solid $black-100;
+      display: flex;
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+
+      &-item {
+
+        &-btn {
+          appearance: none;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          height: 48px;
+          position: relative;
+          width: 48px;
+
+          & > img {
+            border: 1px solid $black-100;
+            max-width: 100%;
+          }
+
+          & .checkmark {
+            bottom: 0;
+            display: none;
+            position: absolute;
+            right: 0;
+            width: 20px;
+          }
+
+          &.active {
+            .checkmark {
+              display: block;
+            }
+          }
+        }
+      }
+    }
+  }
+
+}

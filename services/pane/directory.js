@@ -75,10 +75,7 @@ function openDirectory() {
           inputPlaceholder: `Search People on ${site.get('name')}`,
           click: _.noop
         })
-      }], {
-        header: 'Log Out',
-        content: dom.create('<div></div>') // no content, since we're hijacking the logout click controller
-      }, 'left');
+      }], null, 'left');
 
     ds.controller('directory-pane', directoryPaneController);
     ds.get('directory-pane', el);

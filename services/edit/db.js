@@ -103,6 +103,14 @@ function addTextHeader(obj) {
   return obj;
 }
 
+function addSameOrigin(obj) {
+  _.assign(obj, {
+    credentials: 'same-origin'
+  });
+
+  return obj;
+}
+
 /**
  * check status of a request, passing through data on 2xx and 3xx
  * and erroring on 4xx and 5xx
@@ -177,16 +185,16 @@ function expectJSONResult(res) {
 function expectHTMLResult(uri) {
   return function (res) {
     return res.text().then(dom.create) // string -> elements
-    .then(function (html) {
-      if (html.nodeType === html.ELEMENT_NODE) {
-        // it's an element, add the uri
-        html.setAttribute(references.referenceAttribute, uri);
-      } else if (html.nodeType === html.DOCUMENT_FRAGMENT_NODE) {
-        // it's a document fragment, add the uri to the first child
-        html.firstElementChild.setAttribute(references.referenceAttribute, uri);
-      }
-      return html;
-    });
+      .then(function (html) {
+        if (html.nodeType === html.ELEMENT_NODE) {
+          // it's an element, add the uri
+          html.setAttribute(references.referenceAttribute, uri);
+        } else if (html.nodeType === html.DOCUMENT_FRAGMENT_NODE) {
+          // it's a document fragment, add the uri to the first child
+          html.firstElementChild.setAttribute(references.referenceAttribute, uri);
+        }
+        return html;
+      });
   };
 }
 
@@ -347,6 +355,25 @@ function removeText(uri) {
   })).then(expectTextResult);
 }
 
+/**
+ * Query the page list.
+ * @param  {[type]} url  [description]
+ * @param  {[type]} data [description]
+ * @return {[type]}      [description]
+ */
+function pageListQuery(url, data) {
+  return rest.send(url, addSameOrigin(addJsonHeader({
+    method: 'POST',
+    body: JSON.stringify(data)
+  }))).then(checkStatus).then(expectJSONResult);
+}
+
+function siteListQuery(url) {
+  return rest.send(url, addSameOrigin({
+    method: 'GET'
+  })).then(checkStatus).then(expectJSONResult);
+}
+
 module.exports.getSchema = getSchema;
 module.exports.get = getObject;
 module.exports.getText = getText;
@@ -363,3 +390,6 @@ module.exports.isUri = isUri;
 module.exports.isUrl = isUrl;
 module.exports.urlToUri = urlToUri;
 module.exports.uriToUrl = uriToUrl;
+module.exports.pageListQuery = pageListQuery;
+module.exports.siteListQuery = siteListQuery;
+

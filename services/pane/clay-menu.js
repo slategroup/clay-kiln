@@ -2,19 +2,23 @@ const ds = require('dollar-slice'),
   _ = require('lodash'),
   tpl = require('../tpl'),
   pane = require('./'),
-  site = require('../site'),
-  dom = require('@nymag/dom'),
   clayMenuController = require('../../controllers/clay-menu');
 
+// The menu header. Let's cache the declaration here
+// so we can store the value and not have to re-query
+// the DOM anytime this menu opens.
+var $clayMenuHeader;
+
 function openClayMenu() {
-  var pageContent = dom.create(`<img class="fakey" src="${site.get('assetPath')}/media/components/clay-kiln/fakey.png" />`),
-    el = pane.open([{
-      header: 'Pages',
-      content: pageContent
-    }], {
-      header: 'Settings',
-      content: tpl.get('.settings-tab-template')
-    }, 'left');
+  var el;
+
+  $clayMenuHeader = $clayMenuHeader || tpl.get('.clay-menu-header-template');
+
+  el = pane.open([{
+    header: 'All Pages',
+    content: tpl.get('.page-list-template'),
+    fullWidth: true
+  }], null, 'left', 'wide', $clayMenuHeader.cloneNode(true));
 
   ds.controller('clay-menu', clayMenuController);
   ds.get('clay-menu', el);

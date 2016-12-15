@@ -1,3 +1,5 @@
+/* eslint max-params: ['error', 5] */
+
 const _ = require('lodash'),
   dom = require('@nymag/dom'),
   ds = require('dollar-slice'),
@@ -13,19 +15,33 @@ function setDisabled(isDisabled) {
   return isDisabled ? 'disabled' : '';
 }
 
+
 function setFullWidth(isFullWidth) {
   return isFullWidth ? 'pane-content-full-width' : '';
 }
 
 /**
- * align panes left or right
+ * align panes left or right and set the
+ * width of the pane
  * @param {Element} el
  * @param {string} align
+ * @param {string} width
  */
-function alignPane(el, align) {
+function alignPaneSetWidth(el, align, width) {
   var paneEl = dom.find(el, '.kiln-toolbar-pane');
 
-  paneEl.classList.add(`align-${align}`);
+  paneEl.classList.add(`align-${align}`, `width-${width}`);
+}
+
+/**
+ * Add in the optional pane header
+ * @param {Element} el
+ * @param {Element} header
+ */
+function addPaneHeader(el, header) {
+  var paneWrapper = dom.find(el, '.kiln-toolbar-pane');
+
+  dom.prependChild(paneWrapper, header);
 }
 
 /**
@@ -33,15 +49,18 @@ function alignPane(el, align) {
  * @param {array} tabs
  * @param {object} [dynamicTab]
  * @param {string} [align]
+ * @param {string} [wide]
+ * @param {element} [paneHeader]
  * @returns {Element}
  */
-function createPane(tabs, dynamicTab, align) {
+function createPane(tabs, dynamicTab, align, wide, paneHeader) {
   var el = tpl.get('.kiln-pane-template'),
     tabsEl = dom.find(el, '.pane-tabs'),
     tabsInnerEl = dom.find(el, '.pane-tabs-inner'),
     innerEl = dom.find(el, '.pane-inner');
 
   align = align || 'right';
+  wide = wide || 'normal';
 
   // loop through the tabs, adding the tab and contents
   _.each(tabs, function (tab, index) {
@@ -62,7 +81,12 @@ function createPane(tabs, dynamicTab, align) {
     innerEl.appendChild(contentWrapper);
   }
 
-  alignPane(el, align);
+  alignPaneSetWidth(el, align, wide);
+
+  // If the optional header element has been passed in
+  if (paneHeader) {
+    addPaneHeader(el, paneHeader);
+  }
 
   return el;
 }
@@ -103,11 +127,13 @@ function findActiveTab(el, tabs, dynamicTab) {
  * @param {array} tabs with `tab` and `content`
  * @param {object} [dynamicTab] will display at the right of the tabs
  * @param {string} [align] defaults to `right`, but you can also align panes `left`
+ * @param {string} [wide] defaults to 'normal', but you can also specify 'wide'
+ * @param {Elemet} [paneHeader] an optional element to pass in as the header to the pane
  * @returns {Element} pane
  */
-function open(tabs, dynamicTab, align) {
+function open(tabs, dynamicTab, align, wide, paneHeader) {
   var toolbar = dom.find('.kiln-toolbar'),
-    el = createPane(tabs, dynamicTab, align),
+    el = createPane(tabs, dynamicTab, align, wide, paneHeader),
     active = findActiveTab(el, tabs, dynamicTab), // find active tab, if any
     pane, paneWrapper;
 

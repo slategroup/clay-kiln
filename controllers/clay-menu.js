@@ -3,8 +3,16 @@ const openDirectory = require('../services/pane/directory'),
   site = require('../services/site'),
   db = require('../services/edit/db'),
   moment = require('moment'),
-  querySize = 50;
+  querySize = 8;
 
+/**
+ * Construct the query to the page list index based on arguments
+ *
+ * @param  {Array} selectedSites
+ * @param  {String} inputVal
+ * @param  {Number} fromVal
+ * @return {Object}
+ */
 function queryConstructor(selectedSites, inputVal, fromVal) {
   var query = {
       index: 'pages',
@@ -12,7 +20,7 @@ function queryConstructor(selectedSites, inputVal, fromVal) {
     },
     body = {
       size: querySize,
-      from: fromVal || 0
+      from: fromVal * querySize || 0
     };
 
   if (inputVal || selectedSites.length) {
@@ -20,7 +28,6 @@ function queryConstructor(selectedSites, inputVal, fromVal) {
       filtered: {}
     };
   }
-
 
   if (inputVal) {
     _.set(body.query.filtered, ['query', 'match', 'title'], inputVal);
@@ -30,9 +37,6 @@ function queryConstructor(selectedSites, inputVal, fromVal) {
     _.set(body.query.filtered, ['filter', 'terms', 'siteSlug'], selectedSites);
   }
 
-  // Add size
-  // Add pagination stuff
-  // Add all the things
   return _.assign(query, { body: body });
 }
 
@@ -44,14 +48,15 @@ function queryConstructor(selectedSites, inputVal, fromVal) {
  * @returns {Promise}
  */
 function getPages(query, reqPath) {
-  return db.pageListQuery(reqPath + '/_search/pagelist', query);
+  return db.pageListQuery(reqPath + '/_search/pagelist', query)
+    .then(modelPageData);
 }
 
 /**
  * Make the site data pretty and easy to work with
  *
- * @param  {[type]} resp [description]
- * @return {[type]}      [description]
+ * @param  {Array} resp
+ * @return {Array}
  */
 function modelSiteData(resp) {
   var sites = _.get(resp, 'hits'),
@@ -76,9 +81,10 @@ function getSites(currentSiteUrl) {
 }
 
 /**
- * [modelPageData description]
- * @param  {[type]} resp [description]
- * @return {[type]}      [description]
+ * Return an object of pretty page data
+ *
+ * @param  {Object} resp
+ * @return {Array}
  */
 function modelPageData(resp) {
   var pages = _.get(resp, 'hits');
@@ -106,20 +112,27 @@ function modelPageData(resp) {
 }
 
 /**
- * [formatTime description]
- * @param  {[type]} time [description]
- * @return {[type]}      [description]
+ * A formatter function to pass to moment
+ *
+ * @param  {Object} date
+ * @return {Object}
+ */
+function dateFormatter(date) {
+  if (date.year() !== moment().year()) {
+    return date.format('MM/DD/YY');
+  } else {
+    return date.format('MM/DD');
+  }
+}
+
+/**
+ * Return the properly formatted date string
+ *
+ * @param  {String} time
+ * @return {String}
  */
 function formatTime(time) {
   var time;
-
-  function dateFormatter(date) {
-    if (date.year() !== moment().year()) {
-      return date.format('MM/DD/YY');
-    } else {
-      return date.format('MM/DD');
-    }
-  }
 
   time = moment().calendar(moment(time), {
     sameDay: '[Today]',
@@ -178,14 +191,21 @@ function templateAuthors(authors) {
   }).join(',');
 }
 
+/**
+ * [createPageLink description]
+ * @param  {[type]} url [description]
+ * @return {[type]}     [description]
+ */
 function createPageLink(url) {
   var formedUrl = '';
 
   // Check for .html ending
   if (_.endsWith(url, '/')) {
     formedUrl = url;
-  } else {
+  } else if (!_.endsWith(url, '.html')) {
     formedUrl = `${url}.html`;
+  } else {
+    formedUrl = url;
   }
 
   // Add begining slashes if none exist
@@ -197,11 +217,13 @@ function createPageLink(url) {
 }
 
 /**
- * [templatePages description]
- * @param  {[type]} pages [description]
- * @return {[type]}       [description]
+ * Create a string to be converted to an element(s)
+ * with all the page data
+ *
+ * @param  {Array} pages
+ * @return {String}
  */
-function templatePages(pages) {
+function pageDataToString(pages) {
   var list = '';
 
   _.each(pages, function (page) {
@@ -220,6 +242,21 @@ function templatePages(pages) {
     </li>`;
   });
 
+  return list;
+}
+
+/**
+ * Create the page list element
+ *
+ * @param  {Array} pages
+ * @return {Element}
+ */
+function templatePages(pages) {
+  var list = pageDataToString(pages);
+
+  // Add the load more
+  list += '<li class="page-list-readout-loadmore">Load More...</li>'
+    // Create the element
   return dom.create(`<ul class='page-list-readout'>${list}</ul>`);
 }
 
@@ -279,6 +316,12 @@ function formSiteBasePath() {
   return `//${host}${port}${path}`;
 }
 
+function appendAdditionalPages(pages, el) {
+  var pages = dom.create(pageDataToString(pages)),
+    loadMore = dom.find(el, '.page-list-readout-loadmore');
+
+  dom.insertBefore(loadMore, pages);
+}
 
 module.exports = function () {
   // We have to construct the sites list when we open the menu, but we don't
@@ -297,9 +340,15 @@ module.exports = function () {
     // A debounced keyup handler
     this.debouncedKeyUp = _.debounce(_.bind(this.debouncedKeyUpHandler, this), 500);
 
+    this.debouncedScroll = _.debounce(_.bind(this.debouncedScrollHandler, this), 500);
+
     this.sites = [];
 
     this.selectedSites = [];
+
+    this.paneHeight = null;
+
+    this.hideLoadMore = false;
 
     this.sitesOpenState = false;
 
@@ -315,8 +364,51 @@ module.exports = function () {
       '.signout click': 'onSignOutClick',
       '.settings click': 'onDirectoryClick',
       '.page-list-search keyup': 'onInputKeyup',
-      '.sites-readout-trigger click': 'onTriggerClick'
+      '.sites-readout-trigger click': 'onTriggerClick',
+      '.pane-inner scroll': 'onPaneScroll'
     },
+    /**
+     * [debouncedScrollHandler description]
+     * @param  {[type]} e [description]
+     * @return {[type]}   [description]
+     */
+    debouncedScrollHandler: function (target) {
+      if (target.scrollHeight - target.scrollTop === this.paneHeight && !this.loadMore) {
+        // Incremement the pagination
+        this.paginationState += 1;
+        // Get the new pages
+        getPages(queryConstructor(this.selectedSites, '', this.paginationState), siteBaseReqPath)
+          .then(function (resp) {
+            appendAdditionalPages(resp, this.list);
+            this.hideLoadMore = resp.length < querySize;
+
+            this.toggleLoadMore();
+          }.bind(this));
+      }
+    },
+    /**
+     * [onPaneScroll description]
+     * @param  {[type]} e [description]
+     * @return {[type]}   [description]
+     */
+    onPaneScroll: function (e) {
+      e.stopPropagation();
+
+      this.debouncedScroll(e.currentTarget);
+    },
+    toggleLoadMore: function () {
+      var loadMore;
+
+      if (this.hideLoadMore) {
+        loadMore = dom.find(this.list, '.page-list-readout-loadmore');
+        loadMore.classList.add('hidden');
+      }
+    },
+    /**
+     * [onSignOutClick description]
+     * @param  {[type]} e [description]
+     * @return {[type]}   [description]
+     */
     onSignOutClick: function (e) {
       e.stopPropagation();
 
@@ -334,6 +426,7 @@ module.exports = function () {
       this.loader = dom.find(this.el, '.page-list-loading');
       this.sitesReadout = dom.find(this.el, '.sites-readout');
       this.siteList = dom.find(this.el, '.sites-readout-list');
+      this.innerPane = dom.find(this.el, '.pane-inner');
 
       return this;
     },
@@ -344,6 +437,8 @@ module.exports = function () {
     initValues: function () {
       // Add the current site to the selected sites array
       this.selectedSites.push(currentSite);
+      // Find the height of the pane
+      this.paneHeight = _.parseInt(this.innerPane.style.height);
 
       return this;
     },
@@ -372,7 +467,6 @@ module.exports = function () {
         this.paginationState = 0;
 
         getPages(queryConstructor(this.selectedSites, this.search.value, this.paginationState), siteBaseReqPath)
-          .then(modelPageData)
           .then(this.updatePageList.bind(this));
       }
     },
@@ -397,7 +491,6 @@ module.exports = function () {
 
       // Request the pages
       getPages(queryConstructor(this.selectedSites, e.target.value, this.paginationState), siteBaseReqPath)
-        .then(modelPageData)
         .then(this.updatePageList.bind(this));
     },
     /**
@@ -412,13 +505,16 @@ module.exports = function () {
 
       dom.replaceElement(this.list, list);
       this.list = dom.find(this.el, '.page-list-readout');
+      // Should load more be hidden?
+      this.hideLoadMore = pages.length < querySize;
+      this.toggleLoadMore();
     },
     /**
      * Update the sites list area for selecting from sites
      * @param  {array} sites
      */
     updateSiteList: function (sites) {
-      sitesDataArray = sites; // TODO: don't rerun this stuff
+      sitesDataArray = sites;
       sitesDataObject = _.keyBy(sites, function (site) {
         return site.slug;
       });
@@ -475,14 +571,19 @@ module.exports = function () {
      * @return {Object}
      */
     initPageList: function () {
-      getSites(siteBaseReqPath)
-        .then(function (sites) {
-          this.updateSiteList(sites);
+      if ($sitesList) {
+        getPages(queryConstructor(this.selectedSites, '', this.paginationState), siteBaseReqPath)
+          .then(this.updatePageList.bind(this));
+      } else {
+        getSites(siteBaseReqPath)
+          .then(function (sites) {
+            this.updateSiteList(sites);
 
-          return getPages(queryConstructor(this.selectedSites, '', this.paginationState), siteBaseReqPath)
-            .then(modelPageData)
-            .then(this.updatePageList.bind(this));
-        }.bind(this));
+            return getPages(queryConstructor(this.selectedSites, '', this.paginationState), siteBaseReqPath)
+              .then(this.updatePageList.bind(this));
+          }.bind(this));
+      }
+
       return this;
     }
   };

@@ -83,7 +83,18 @@ $toggle_speed: 350ms;
         appearance: none;
         background: transparent;
         border: none;
-        cursor: pointer;
+      }
+    }
+
+    &-loadmore {
+      background: $black-10;
+      background: linear-gradient($white, $black-10);
+      color: $black-50;
+      padding: 14px 0;
+      text-align: center;
+
+      &.hidden {
+        display: none;
       }
     }
   }
@@ -114,8 +125,11 @@ $toggle_speed: 350ms;
       }
 
       > * {
-        border: 1px solid $black;
         max-width: 100%;
+      }
+
+      > img {
+        border: 1px solid $black;
       }
 
       &-text {

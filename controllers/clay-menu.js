@@ -146,8 +146,6 @@ function formatTime(time) {
   return `<span class="page-list-readout-item-status-time">${time}</span>`;
 }
 
-
-
 /**
  *
  * @param  {array} sites
@@ -181,9 +179,10 @@ function templateSites(sites, currentSite) {
 }
 
 /**
- * [templateAuthors description]
- * @param  {[type]} authors
- * @return {[type]}
+ * Wrap each author in a span
+ *
+ * @param  {array} authors
+ * @return {string}
  */
 function templateAuthors(authors) {
   return _.map(authors, function (author) {
@@ -192,9 +191,11 @@ function templateAuthors(authors) {
 }
 
 /**
- * [createPageLink description]
- * @param  {[type]} url
- * @return {[type]}
+ * Create the link for the page. Needs to check for
+ * different properties of the URL.
+ *
+ * @param  {string} url
+ * @return {string}
  */
 function createPageLink(url) {
   var formedUrl = '';

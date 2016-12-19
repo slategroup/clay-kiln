@@ -47,8 +47,8 @@ function queryConstructor(selectedSites, inputVal, fromVal) {
  * @param {string} reqPath
  * @returns {Promise}
  */
-function getPages(query, reqPath) {
-  return db.pageListQuery(reqPath + '/_search/pagelist', query)
+function getPages(query) {
+  return db.pageListQuery('/_search/pages', query)
     .then(modelPageData);
 }
 
@@ -76,7 +76,7 @@ function modelSiteData(resp) {
  * @return {Promise}
  */
 function getSites(currentSiteUrl) {
-  return db.siteListQuery(currentSiteUrl + '/_search/sites')
+  return db.siteListQuery('/_search/sites')
     .then(modelSiteData);
 }
 
@@ -182,8 +182,8 @@ function templateSites(sites, currentSite) {
 
 /**
  * [templateAuthors description]
- * @param  {[type]} authors [description]
- * @return {[type]}         [description]
+ * @param  {[type]} authors
+ * @return {[type]}
  */
 function templateAuthors(authors) {
   return _.map(authors, function (author) {
@@ -193,8 +193,8 @@ function templateAuthors(authors) {
 
 /**
  * [createPageLink description]
- * @param  {[type]} url [description]
- * @return {[type]}     [description]
+ * @param  {[type]} url
+ * @return {[type]}
  */
 function createPageLink(url) {
   var formedUrl = '';
@@ -303,19 +303,11 @@ function setStatusMessage(page) {
 }
 
 /**
- * [formSiteBasePath description]
- * @return {[type]} [description]
+ * Add additional pages to the readout
+ *
+ * @param  {array} pages
+ * @param  {Element} el
  */
-function formSiteBasePath() {
-  var path = site.get('path'),
-    host = site.get('host'),
-    port = site.get('port');
-
-  port = port === '80' ? '' : `:${port}`;
-
-  return `//${host}${port}${path}`;
-}
-
 function appendAdditionalPages(pages, el) {
   var pages = dom.create(pageDataToString(pages)),
     loadMore = dom.find(el, '.page-list-readout-loadmore');
@@ -331,8 +323,7 @@ module.exports = function () {
   var $sitesList = null, // Element to
     sitesDataArray = [], // ES provides an array response
     sitesDataObject = {}, // Easier to query an object sometimes
-    currentSite = site.get('slug'), // The string (key) of the current site
-    siteBaseReqPath = formSiteBasePath();
+    currentSite = site.get('slug'); // The string (key) of the current site
 
   function Constructor(el) {
     this.el = el;
@@ -368,16 +359,16 @@ module.exports = function () {
       '.pane-inner scroll': 'onPaneScroll'
     },
     /**
-     * [debouncedScrollHandler description]
-     * @param  {[type]} e [description]
-     * @return {[type]}   [description]
+     * Debounce scrolling within the pane
+     *
+     * @param  {Object} e
      */
     debouncedScrollHandler: function (target) {
       if (target.scrollHeight - target.scrollTop === this.paneHeight && !this.loadMore) {
         // Incremement the pagination
         this.paginationState += 1;
         // Get the new pages
-        getPages(queryConstructor(this.selectedSites, '', this.paginationState), siteBaseReqPath)
+        getPages(queryConstructor(this.selectedSites, '', this.paginationState))
           .then(function (resp) {
             appendAdditionalPages(resp, this.list);
             this.hideLoadMore = resp.length < querySize;
@@ -387,9 +378,9 @@ module.exports = function () {
       }
     },
     /**
-     * [onPaneScroll description]
-     * @param  {[type]} e [description]
-     * @return {[type]}   [description]
+     * Scroll handler for inside the pane
+     *
+     * @param  {Object} e
      */
     onPaneScroll: function (e) {
       e.stopPropagation();
@@ -405,9 +396,9 @@ module.exports = function () {
       }
     },
     /**
-     * [onSignOutClick description]
-     * @param  {[type]} e [description]
-     * @return {[type]}   [description]
+     * When the sign out button is clicked
+     *
+     * @param  {Object} e
      */
     onSignOutClick: function (e) {
       e.stopPropagation();
@@ -431,8 +422,9 @@ module.exports = function () {
       return this;
     },
     /**
-     * [initValues description]
-     * @return {[type]} [description]
+     * Init values for the page list
+     *
+     * @return {object}
      */
     initValues: function () {
       // Add the current site to the selected sites array
@@ -466,7 +458,7 @@ module.exports = function () {
         // Assume changes to the selected sites so reset pagination
         this.paginationState = 0;
 
-        getPages(queryConstructor(this.selectedSites, this.search.value, this.paginationState), siteBaseReqPath)
+        getPages(queryConstructor(this.selectedSites, this.search.value, this.paginationState))
           .then(this.updatePageList.bind(this));
       }
     },
@@ -490,7 +482,7 @@ module.exports = function () {
       this.paginationState = 0;
 
       // Request the pages
-      getPages(queryConstructor(this.selectedSites, e.target.value, this.paginationState), siteBaseReqPath)
+      getPages(queryConstructor(this.selectedSites, e.target.value, this.paginationState))
         .then(this.updatePageList.bind(this));
     },
     /**
@@ -522,7 +514,6 @@ module.exports = function () {
 
       dom.replaceElement(this.siteList, $sitesList);
       this.siteList = dom.find(this.el, '.sites-readout-list');
-      // TODO: Remove this listener on close of pane
       this.siteList.addEventListener('click', this.siteButtonClick.bind(this));
       this.updateTriggerHTML(false);
     },
@@ -572,14 +563,14 @@ module.exports = function () {
      */
     initPageList: function () {
       if ($sitesList) {
-        getPages(queryConstructor(this.selectedSites, '', this.paginationState), siteBaseReqPath)
+        getPages(queryConstructor(this.selectedSites, '', this.paginationState))
           .then(this.updatePageList.bind(this));
       } else {
-        getSites(siteBaseReqPath)
+        getSites()
           .then(function (sites) {
             this.updateSiteList(sites);
 
-            return getPages(queryConstructor(this.selectedSites, '', this.paginationState), siteBaseReqPath)
+            return getPages(queryConstructor(this.selectedSites, '', this.paginationState))
               .then(this.updatePageList.bind(this));
           }.bind(this));
       }

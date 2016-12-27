@@ -112,21 +112,40 @@ function addSameOrigin(obj) {
 }
 
 /**
+ * handle errors thrown by fetch itself, e.g. connection refused
+ * @param  {string} method
+ * @return {object}        with `statusText` for checkStatus to handle
+ */
+function checkError(method) {
+  return function apiError() {
+    return { statusText: `Cannot ${method === 'GET' ? 'get' : 'send'} data` };
+  };
+}
+
+/**
  * check status of a request, passing through data on 2xx and 3xx
  * and erroring on 4xx and 5xx
- * @param {object} res
+ * @param {string} url
  * @returns {object}
  * @throws error on non-200/300 response status
  */
-function checkStatus(res) {
-  if (res.status >= 200 && res.status < 400) {
-    return res;
-  } else {
-    let error = new Error(res.statusText);
+function checkStatus(url) {
+  return function (res) {
+    if (res.status && res.status >= 200 && res.status < 400) {
+      return res;
+    } else if (url !== res.url && _.includes(res.url, '/auth/login')) {
+      // login redirect!
+      // this means we're trying to do an api call but we're not authenticated.
+      // reload the page to force a redirect to the login page
+      // (while also preserving the current page to redirect back to once they log in)
+      window.location.reload();
+    } else {
+      let error = new Error(res.statusText);
 
-    error.response = res;
-    throw error;
-  }
+      error.response = res;
+      throw error;
+    }
+  };
 }
 
 /**
@@ -144,7 +163,9 @@ function send(options) {
   // add credentials. this tells fetch to pass along cookies, incl. auth
   options.credentials = 'same-origin';
 
-  return rest.send(uriToUrl(options.url), options).then(checkStatus);
+  return rest.send(uriToUrl(options.url), options)
+    .catch(checkError(options.method))
+    .then(checkStatus(uriToUrl(options.url)));
 }
 
 /**

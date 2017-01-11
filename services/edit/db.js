@@ -116,6 +116,7 @@ function addSameOrigin(obj) {
  * @param  {string} method
  * @return {object}        with `statusText` for checkStatus to handle
  */
+
 function checkError(method) {
   return function apiError() {
     return { statusText: `Cannot ${method === 'GET' ? 'get' : 'send'} data` };
@@ -382,17 +383,22 @@ function removeText(uri) {
  * @param  {[type]} data [description]
  * @return {[type]}      [description]
  */
-function pageListQuery(url, data) {
+function postJSON(url, data) {
   return rest.send(url, addSameOrigin(addJsonHeader({
     method: 'POST',
     body: JSON.stringify(data)
-  }))).then(checkStatus).then(expectJSONResult);
+  }))).then(checkStatus(url)).then(expectJSONResult);
 }
 
-function siteListQuery(url) {
+/**
+ * Get to
+ * @param  {[type]} url [description]
+ * @return {[type]}     [description]
+ */
+function getJSON(url) {
   return rest.send(url, addSameOrigin({
     method: 'GET'
-  })).then(checkStatus).then(expectJSONResult);
+  })).then(checkStatus(url)).then(expectJSONResult);
 }
 
 module.exports.getSchema = getSchema;
@@ -411,6 +417,6 @@ module.exports.isUri = isUri;
 module.exports.isUrl = isUrl;
 module.exports.urlToUri = urlToUri;
 module.exports.uriToUrl = uriToUrl;
-module.exports.pageListQuery = pageListQuery;
-module.exports.siteListQuery = siteListQuery;
+module.exports.postJSON = postJSON;
+module.exports.getJSON = getJSON;
 

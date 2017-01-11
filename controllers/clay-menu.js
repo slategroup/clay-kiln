@@ -3,7 +3,8 @@ const openDirectory = require('../services/pane/directory'),
   site = require('../services/site'),
   db = require('../services/edit/db'),
   moment = require('moment'),
-  querySize = 8;
+  querySize = 8,
+  searchEndpoint = setSearchEndpoint();
 
 /**
  * Construct the query to the page list index based on arguments
@@ -48,9 +49,10 @@ function queryConstructor(selectedSites, inputVal, fromVal) {
  * @returns {Promise}
  */
 function getPages(query) {
-  return db.pageListQuery('/_search/pages', query)
+  return db.postJSON(`//${searchEndpoint}/pages`, query)
     .then(modelPageData);
 }
+
 
 /**
  * Make the site data pretty and easy to work with
@@ -75,8 +77,8 @@ function modelSiteData(resp) {
  * @param {string} currentSiteUrl
  * @return {Promise}
  */
-function getSites(currentSiteUrl) {
-  return db.siteListQuery('/_search/sites')
+function getSites() {
+  return db.getJSON(`//${searchEndpoint}/sites`)
     .then(modelSiteData);
 }
 
@@ -109,6 +111,15 @@ function modelPageData(resp) {
       publishTime: src.publishTime
     };
   });
+}
+
+/**
+ * Set the search endpoint so that it can be referenced globally
+ *
+ * @return {String}
+ */
+function setSearchEndpoint() {
+  return `${window.location.host}/_search`;
 }
 
 /**
@@ -511,6 +522,7 @@ module.exports = function () {
       sitesDataObject = _.keyBy(sites, function (site) {
         return site.slug;
       });
+
       $sitesList = $sitesList || templateSites(sitesDataArray, currentSite);
 
       dom.replaceElement(this.siteList, $sitesList);
@@ -518,6 +530,11 @@ module.exports = function () {
       this.siteList.addEventListener('click', this.siteButtonClick.bind(this));
       this.updateTriggerHTML(false);
     },
+    /**
+     * Update the selected values for the sites trigger
+     *
+     * @param  {Boolean} state
+     */
     updateTriggerHTML: function (state) {
       var html = '',
         selectedSite;

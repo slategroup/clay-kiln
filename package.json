@@ -63,6 +63,8 @@
     "keycode": "^2.1.0",
     "lodash": "^4.14.2",
     "lodash-webpack-plugin": "^0.11.0",
+    "mobiledoc-dom-renderer": "^0.6.1",
+    "mobiledoc-kit": "^0.10.14",
     "mocha": "^3.2.0",
     "moment": "^2.17.1",
     "node-sass": "^4.3.0",

@@ -489,6 +489,44 @@ tags:
       list: tags
 ```
 
+# simple-list
+
+An array of objects with a `text` property that is a string to display in a list. Useful for tags, authors, keywords, etc.
+
+## Arguments
+
+* **allowRepeatedItems** _(optional)_ allow the same item more than once. defaults to false
+
+* **autocomplete** _(optional)_ object with autocomplete options. Currently this is just the key `list` where the value is the name of a list that Amphora knows about accessible via `/<site>/lists/<listName>`. Example:
+
+```yaml
+  -
+    fn: simple-list
+    autocomplete:
+      list: authors
+```
+
+* **propertyName** _(optional)_ appends double-click functionality to items in the list. Name of the property that is considered "primary"
+
+* **badge** _(optional)_ string to put in the badge if `propertyName` is defined. Defaults to property name
+
+## Usage
+
+* Items may be added by clicking into the input, typing stuff, then pressing <kbd>enter</kbd>, <kbd>tab</kbd>, or <kbd>,</kbd> (comma).
+* Items may be deleted by selecting them (either by clicking them or navigating with the <kbd>→</kbd> and <kbd>←</kbd> then hitting <kbd>delete</kbd> or <kbd>backspace</kbd>.
+* Hitting <kbd>delete</kbd>, <kbd>backspace</kbd>, or <kbd>←</kbd> in the input will select the last item if the input is empty.
+* If `propertyName` is defined it will allow users to double-click items in a simple-list to select a "primary" item. It will also append a small badge to the "primary" item. Only one item may be "primary" at a time.
+
+## Example
+
+```yaml
+tags:
+  _has:
+    fn: simple-list
+    autocomplete:
+      list: tags
+```
+
 # soft-maxlength
 
 Appends a character count to an input. Allows the user to type above the limit, but can be paired with publishing validation to prevent publishing things that are too long.

@@ -47,7 +47,7 @@
   > ```
 </docs>
 
-<style lang="sass">
+<style lang="scss">
   @import '../styleguide/typography';
 
   .editor-no-options {

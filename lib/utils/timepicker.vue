@@ -37,31 +37,36 @@
       },
       errorMessage() {
         if (_.get(this, 'args.validate')) {
-          const validationError = getValidationError(this.timeValue, this.args.validate, this.$store, this.name),
-            parsed = parseNaturalDate(this.timeValue);
+          const validationError = getValidationError(this.timeValue, this.args.validate, this.$store, this.name)
 
           if (validationError) {
             return validationError;
-          } else if (!parsed) {
+          } else if (!this.formattedTime) {
             return `${this.help} (Please enter a valid time)`;
           }
         }
       },
       isInvalid() {
         return !!this.errorMessage;
+      },
+      // a properly formatted time, or empty string if one cannot be parsed
+      formattedTime () {
+        // todo: there's a subtle bug here - parsing the string may fail if the time is impossible today
+        const parsed = parseNaturalDate(this.timeValue);
+        if (parsed) {
+          return dateFormat(parsed, 'HH:mm')
+        } else {
+          return ''
+        }
       }
     },
     mounted() {
-      this.timeValue = !!this.value && _.isString(this.value) ? dateFormat(this.value, 'h:mm A') : '';
+      this.timeValue = this.value
     },
     methods: {
       // every time the value of the input changes, update the store
-      update(val) {
-        const parsed = parseNaturalDate(val);
-
-        if (parsed) {
-          this.$emit('update', dateFormat(parsed, 'HH:mm'));
-        }
+      update() {
+        this.$emit('update', this.timeValue);
       },
       disableInput() {
         this.isDisabled = true;

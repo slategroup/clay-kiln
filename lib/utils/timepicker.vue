@@ -51,7 +51,8 @@
       },
       // a properly formatted time, or empty string if one cannot be parsed
       formattedTime () {
-        // todo: there's a subtle bug here - parsing the string may fail if the time is impossible today
+        // todo: there's a subtle bug here if the implicit chrono reference date (now)
+        //       differs from what the user think it is, e.g. w/ a related date-picker
         const parsed = parseNaturalDate(this.timeValue);
         if (parsed) {
           return dateFormat(parsed, 'HH:mm')

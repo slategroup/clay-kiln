@@ -203,6 +203,13 @@ describe('wysiwyg sanitize', () => {
       }
     );
 
+    test(
+      'allows paragraphs in lists',
+      () => {
+        expect(fn('<ul><li><p>hi</p></li></ul>')).toBe('<ul><li><p>hi</p></li></ul>');
+      }
+    );
+
     test('transforms div to p', () => {
       expect(fn('<div>hi</div>')).toBe('<p>hi</p>');
     });

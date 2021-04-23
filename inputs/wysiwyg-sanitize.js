@@ -8,9 +8,12 @@ const allowedInlineTags = ['strong', 'em', 'a', 'br', 's', 'span', 'sup', 'sub',
   },
   allowedClasses = {
     span: [
-      // whitelisted phrase classes we allow
-      // note: we can convert this to a wildcard (thus allowing many more classes for phrases)
-      // once https://github.com/punkave/sanitize-html/pull/84 is merged
+
+      /*
+       * whitelisted phrase classes we allow
+       * note: we can convert this to a wildcard (thus allowing many more classes for phrases)
+       * once https://github.com/punkave/sanitize-html/pull/84 is merged
+       */
       'kiln-phrase',
       'clay-annotated',
       'clay-designed'
@@ -22,27 +25,28 @@ const allowedInlineTags = ['strong', 'em', 'a', 'br', 's', 'span', 'sup', 'sub',
     i: 'em',
     strike: 's',
     span(tagName, attribs) {
-      const style = attribs.style;
+      const {style} = attribs;
 
-      // we need to convert certain spans to <strong> / <em>,
-      // since google docs uses inline styles instead of semantic tags
+      /*
+       * we need to convert certain spans to <strong> / <em>,
+       * since google docs uses inline styles instead of semantic tags
+       */
       if (style && _.includes(style, 'font-weight: 700')) {
         return {
           tagName: 'strong',
           attribs: {}
         };
-      } else if (style && _.includes(style, 'font-style: italic')) {
+      } if (style && _.includes(style, 'font-style: italic')) {
         return {
           tagName: 'em',
           attribs: {}
         };
-      } else if (attribs.class && _.includes(attribs.class, 'kiln-phrase')) {
+      } if (attribs.class && _.includes(attribs.class, 'kiln-phrase')) {
         // phrases are whitelisted (and can have additional classes if they're added above)
         return { tagName, attribs };
-      } else {
-        // remove any other spans
-        return {};
       }
+      // remove any other spans
+      return {};
     }
   },
   parser = {
@@ -89,14 +93,16 @@ export function sanitizeInlineHTML(str) {
     parser
   });
 
-  // all text coming out of Quill will have each line wrapped in <p>,
-  // so we need to convert those to <br> line breaks
+  /*
+   * all text coming out of Quill will have each line wrapped in <p>,
+   * so we need to convert those to <br> line breaks
+   */
   return trimLinebreaks(sanitized.split('</p>')
     .map(line => line.trim())
     .filter(line => line.length > 0)
     .map(line => line.replace('<p>', ''))
     .join('<br />'));
-};
+}
 
 /**
  * determine if pasted text has well-formed paragraphs
@@ -109,10 +115,13 @@ export function sanitizeInlineHTML(str) {
  * @return {Boolean}
  */
 function hasWellFormedParagraphs(str) {
-  // malformed paragraphs will use <p><br></p> as their paragraph separator,
-  // because each line will technically be a new paragraph.
-  // well-formed paragraphs will just use <p>, and will use <br> by itself
-  // to designate soft linebreaks
+
+  /*
+   * malformed paragraphs will use <p><br></p> as their paragraph separator,
+   * because each line will technically be a new paragraph.
+   * well-formed paragraphs will just use <p>, and will use <br> by itself
+   * to designate soft linebreaks
+   */
   return !_.includes(str, '<p><br /></p>');
 }
 
@@ -132,23 +141,29 @@ export function sanitizeMultiComponentHTML(str) {
   });
 
   if (hasWellFormedParagraphs(sanitized)) {
-    return trimLinebreaks(sanitized.split('</p>')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .map(line => line.replace('<p>', ''))
-      .join('<br /><br />'));
-  } else {
-    // non-wellformed paragraphs must be split on paragraph tags,
-    // and non-graf tags must have extra line breaks because google docs
-    // decided to stop wrapping them in <p> tags
-    let result = trimLinebreaks(sanitized.split('</p>')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .map(line => line.replace('<p>', ''))
-      .join('<br />'));
+    console.debug('with well formed grafs', sanitized);
+    // debugger;
 
-    return result.replace(/<\/(blockquote|h1|h2|h3|h4)><br\s?\/>/ig, '</$1><br /><br />');
+    return trimLinebreaks(sanitized.split('</p><p>')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map(line => line.replace('<p>', '').replace('</p>', ''))
+      .join('<br /><br />'));
   }
+  console.debug('withOUT well formed grafs');
+
+  /*
+   * non-wellformed paragraphs must be split on paragraph tags,
+   * and non-graf tags must have extra line breaks because google docs
+   * decided to stop wrapping them in <p> tags
+   */
+  const result = trimLinebreaks(sanitized.split('</p>')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .map(line => line.replace('<p>', ''))
+    .join('<br />'));
+
+  return result.replace(/<\/(blockquote|h1|h2|h3|h4)><br\s?\/>/ig, '</$1><br /><br />');
 }
 
 /**
@@ -165,4 +180,4 @@ export function sanitizeBlockHTML(str) {
     transformTags,
     parser
   }));
-};
+}

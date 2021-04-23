@@ -38,13 +38,17 @@ function parseTag(tagName, graf) {
  * @returns {array}
  */
 export function splitParagraphs(str) {
-  // because we're parsing out <p> tags, we can conclude that two <br> tags
-  // means a "real" paragraph (e.g. the writer intended for this to be a paragraph break),
-  // whereas a single <br> tag is intended to simply be a line break.
-  let paragraphs = _.map(str.split(/<br\s?\/><br\s?\/>/ig), s => s.trim());
+  /*
+   * because we're parsing out <p> tags, we can conclude that two <br> tags
+   * means a "real" paragraph (e.g. the writer intended for this to be a paragraph break),
+   * whereas a single <br> tag is intended to simply be a line break.
+   */
+  const paragraphs = _.map(str.split(/<br\s?\/><br\s?\/>/ig), s => s.trim());
+
+  console.debug(str, '->', paragraphs);
 
   // handle blocks and headers that should be parsed out as separate components
-  return _.reduce(paragraphs, function (result, graf) {
+  const reduced = _.reduce(paragraphs, (result, graf) => {
     if (containsTag('blockquote', graf)) {
       result = result.concat(parseTag('blockquote', graf));
     } else if (containsTag('h1', graf)) {
@@ -55,12 +59,20 @@ export function splitParagraphs(str) {
       result = result.concat(parseTag('h3', graf));
     } else if (containsTag('h4', graf)) {
       result = result.concat(parseTag('h4', graf));
+    } else if (containsTag('ol', graf)) {
+      result = result.concat(parseTag('ol', graf));
+    } else if (containsTag('ul', graf)) {
+      result = result.concat(parseTag('ul', graf));
     } else {
       result = result.concat([graf]);
     }
 
     return result;
   }, []);
+
+  console.debug('reduced to', reduced);
+
+  return reduced;
 }
 
 /**
@@ -72,17 +84,24 @@ export function splitParagraphs(str) {
 export function cleanCharacters(str) {
   let cleanStr;
 
-  // remove 'line separator' and 'paragraph separator' characters
-  // (not visible in text editors, but get added when pasting from pdfs and old systems)
+  /*
+   * remove 'line separator' and 'paragraph separator' characters
+   * (not visible in text editors, but get added when pasting from pdfs and old systems)
+   */
   cleanStr = str.replace(/(\u2028|\u2029)/g, '');
   // convert tab characters to spaces (pdfs looooove tab characters)
   cleanStr = cleanStr.replace(/(?:\t|\\t)/g, ' ');
-  // assume newlines that AREN'T after a period are errors, while other newlines should actually be spaces
-  // note: this fixes issues when pasting from pdfs or other sources that automatically
-  // insert newlines at arbitrary places
+
+  /*
+   * assume newlines that AREN'T after a period are errors, while other newlines should actually be spaces
+   * note: this fixes issues when pasting from pdfs or other sources that automatically
+   * insert newlines at arbitrary places
+   */
   cleanStr = cleanStr.replace(/\.\n/g, '.<br />');
   cleanStr = cleanStr.replace(/\n/g, ' ');
   // trim the string to catch anything we converted to spaces above
+  console.debug('cleaned', str, '->', cleanStr);
+
   return cleanStr.trim();
 }
 
@@ -95,7 +114,7 @@ export function cleanCharacters(str) {
  * @returns {array}
  */
 export function matchComponents(strings, rules) {
-  return _.filter(_.map(strings, function (str) {
+  return _.filter(_.map(strings, (str) => {
     let cleanStr,
       matchedRule,
       matchedObj,
@@ -108,27 +127,29 @@ export function matchComponents(strings, rules) {
     // remove any other <p> or <div> tags, because you cannot put block-level tags inside paragraphs
     cleanStr = cleanStr.replace(/<\/?(?:p|div)>/ig, '');
 
-    matchedRule = _.find(rules, function matchRule(rule) {
-      return rule.match.exec(cleanStr);
-    });
+    matchedRule = _.find(rules, rule => rule.match.exec(cleanStr));
 
     if (!matchedRule) {
       store.dispatch('showSnackbar', `No paste rule for "${_.truncate(cleanStr, { length: 20, omission: '…' })}"`);
-      throw new Error('No matching paste rule for ' + cleanStr);
+      throw new Error(`No matching paste rule for ${cleanStr}`);
     }
 
     // grab stuff from matched rule, incl. component and field
     matchedObj = _.assign({}, matchedRule);
 
-    // find actual matched value for component
-    // note: rules need to grab _some value_ from the string
+    /*
+     * find actual matched value for component
+     * note: rules need to grab _some value_ from the string
+     */
     matchedValue = matchedRule.match.exec(cleanStr)[1];
 
     // finally, add the value into the matched obj
     matchedObj.value = matchedValue;
 
+    console.debug('match', str, cleanStr, matchedRule, matchedObj, matchedValue);
+
     return matchedObj;
-  }), function filterMatches(component) {
+  }), (component) => {
     let val;
 
     try {
@@ -138,8 +159,10 @@ export function matchComponents(strings, rules) {
       val = '';
     }
 
-    // filter out any components that are blank (filled with empty spaces)
-    // this happens when paragraphs really only contain <p> tags, <div>s, <br>s, or extra spaces
+    /*
+     * filter out any components that are blank (filled with empty spaces)
+     * this happens when paragraphs really only contain <p> tags, <div>s, <br>s, or extra spaces
+     */
 
     // return true if the string contains text (not just tags), and isn't just whitespace
     return val.length && val.match(/\S/);
@@ -157,34 +180,41 @@ export function matchComponents(strings, rules) {
  * @return {array}
  */
 export function generatePasteRules(pasteRules, currentComponent, currentField) {
-  // if no paste rules are defined for a multi-component wysiwyg,
-  // new paragraphs should match the current component
+  /*
+   * if no paste rules are defined for a multi-component wysiwyg,
+   * new paragraphs should match the current component
+   */
   pasteRules = pasteRules || [{
     match: '(.*)',
     component: currentComponent,
     field: currentField
   }];
+  console.debug('generating paste rules', pasteRules, currentComponent, currentField);
 
-  return _.map(pasteRules, function (rawRule) {
+  return _.map(pasteRules, (rawRule) => {
     const pre = '^',
       preLink = '(?:<a(?:.*?)>)?',
       post = '$',
-      postLink = '(?:</a>)?';
+      postLink = '(?:</a>)?',
 
-    let rule = _.assign({}, rawRule);
+      rule = _.assign({}, rawRule);
 
-    // regex rule assumptions
-    // 1. match FULL STRINGS (not partials), e.g. wrap rule in ^ and $
+    /*
+     * regex rule assumptions
+     * 1. match FULL STRINGS (not partials), e.g. wrap rule in ^ and $
+     */
     if (!rule.match) {
       throw new Error('Paste rule needs regex! ', rule);
     }
 
-    // if `rule.matchLink` is true, match rule AND a link with the rule as its text
-    // this allows us to deal with urls that other text editors make into links automatically
-    // (e.g. google docs creates links when you paste in urls),
-    // but will only return the stuff INSIDE the link text (e.g. the url).
-    // For embeds (where you want to grab the url) set matchLink to true,
-    // but for components that may contain actual links set matchLink to false
+    /*
+     * if `rule.matchLink` is true, match rule AND a link with the rule as its text
+     * this allows us to deal with urls that other text editors make into links automatically
+     * (e.g. google docs creates links when you paste in urls),
+     * but will only return the stuff INSIDE the link text (e.g. the url).
+     * For embeds (where you want to grab the url) set matchLink to true,
+     * but for components that may contain actual links set matchLink to false
+     */
     if (rule.matchLink) {
       rule.match = `${preLink}${rule.match}${postLink}`;
     }

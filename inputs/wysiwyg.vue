@@ -338,7 +338,14 @@
             // asynchronously trigger component creation if they match things
             // note: this may also replace the current paragraph if the entirety of the paragraph
             // is something that matches another component
+            console.debug(
+              'converting paste',
+              this.container.innerHTML,
+              sanitizeMultiComponentHTML(this.container.innerHTML),
+              splitParagraphs(sanitizeMultiComponentHTML(this.container.innerHTML))
+              ) 
             components = matchComponents(splitParagraphs(sanitizeMultiComponentHTML(this.container.innerHTML)), rules);
+            console.debug('matched to components', components)
             delta = handleMultiParagraphPaste(components, {
               quill: this.quill,
               current,
@@ -353,6 +360,7 @@
           }
 
           this.container.innerHTML = '';
+            console.debug('delta', delta)
 
           return delta;
         }
@@ -368,6 +376,7 @@
         this.editorData += appendText;
         el.innerHTML = this.editorData;
         // update form data
+        console.debug('commiting on append', el.innerHTML)
         store.commit(UPDATE_FORMDATA, {
           path: name,
           data: isSingleLine || isMultiComponent ? sanitizeInlineHTML(el.innerHTML) : sanitizeBlockHTML(el.innerHTML)
@@ -756,6 +765,7 @@
         } else if (isMultiLine) {
           html = sanitizeBlockHTML(editor.root.innerHTML);
         }
+        console.debug('committing on text change', editor.root.innerHTML, html)
 
         if (html === '<br />') {
           // empty fields will have a single line break

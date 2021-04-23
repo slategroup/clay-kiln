@@ -10,7 +10,9 @@ const Delta = Quill.import('delta');
  * @return {string}
  */
 function removeParagraphs(html) {
-  return html.replace(/<\/p><p>/ig, '<br />').replace(/<\/?p>/ig, '').replace(/<br>/ig, '');
+  console.debug('remove paragraphs', html);
+  
+return html.replace(/<\/p><p>/ig, '<br />').replace(/<\/?p>/ig, '').replace(/<br>/ig, '');
 }
 
 /**
@@ -39,7 +41,7 @@ function traverse(node, elementMatchers, textMatchers) { // Post-order
   if (node.nodeType === node.TEXT_NODE) {
     // run text matchers for node
     return _.reduce(textMatchers, (delta, matcher) => matcher(node, delta), new Delta());
-  } else if (node.nodeType === node.ELEMENT_NODE) {
+  } if (node.nodeType === node.ELEMENT_NODE) {
     let children = node.childNodes /* istanbul ignore next: only applies in edge cases */ || [];
 
     return _.reduce(children, (delta, childNode) => {
@@ -88,7 +90,7 @@ export function deltaEndsWith(delta, text) {
     i = delta.ops.length - 1;
 
   for (; i >= 0 && endText.length < text.length; --i) {
-    let op = delta.ops[i];
+    const op = delta.ops[i];
 
     /* istanbul ignore if: copied from quill, but never hit in our code */
     if (typeof op.insert !== 'string') {
